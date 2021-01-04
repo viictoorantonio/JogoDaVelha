@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JOGO DA VELHA</title>
+</head>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+    }
+
+    .row {
+        width: 100%;
+        height: 33.333%;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .col {
+        width: 33.3333%;
+        height: 100%;
+        border: 1px black solid;
+        cursor: pointer;
+        font-size: 8rem;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .col p {
+        display: none;
+    }
+
+    .board {
+        width: 50%;
+        height: 80%;
+        background-color: white;
+    }
+
+    @media only screen and (max-width: 1000px) {
+        .board{
+            width: 90%;
+        }
+    }
+</style>
+
+<body>
+
+    <div id="promise" style="width: 100%;height: 100vh;background-color: rgba(0, 0, 0, 0.57);position: fixed;display: flex;align-items: center;justify-content: center;">
+
+        <div style="width: 70%;height: 50%;background-color: white;border-radius: 10px; display: flex;align-items: center;justify-content: center;flex-direction: column;">
+            <h1 style="margin-bottom: 2rem;">JOGO DA VELHA</h1>
+            <p>Espere outro PLAYER entrar para começarmos!</p>
+            <p>Você está jogando com o PLAYER: <strong id="typePlayer"></strong></p>
+        </div>
+
+    </div>
+
+    <div id="menuPrincipal" style="width: 100%;height: 100vh;background-color: rgba(0, 0, 0, 0.57);position: fixed;display: none;align-items: center;justify-content: center;">
+        <div id="contentMenuPrincipal" style="width: 70%;height: 50%;background-color: white;border-radius: 10px; display: flex;align-items: center;justify-content: center;flex-direction: column;">
+            <h1></h1>
+            <button style="width: 200px;height: 40px;border-radius: 5px;border: 0;background-color: #ff8400;color: white;font-size: 1.2rem;font-weight: 700;">Jogar novamente</button>
+        </div>
+    </div>
+
+    <div id="filter" style="width: 100%;height: 100vh;background-color: rgba(0, 0, 0, 0.57);position: fixed;display: none;align-items: center;justify-content: center;">
+        <h2 style="color: white;">Espere sua vez.</h2>
+    </div>
+
+    <div
+        style="width: 100%;height: 100vh;background-color: black;display: flex;align-items: center;justify-content: center;">
+        <div class="board">
+
+            <div class="row">
+                <div  class="col" id="0">
+                    <p data-requester="0-X">X</p>
+                    <p data-requester="0-O">O</p>
+                </div>
+
+                <div  class="col" id="1">
+                    <p data-requester="1-X">X</p>
+                    <p data-requester="1-O">O</p>
+                </div>
+
+                <div  class="col" id="2">
+                    <p data-requester="2-X">X</p>
+                    <p data-requester="2-O">O</p>
+                </div>
+            </div>
+
+            <div class="row">
+                <div  class="col" id="3">
+                    <p data-requester="3-X">X</p>
+                    <p data-requester="3-O">O</p>
+                </div>
+
+                <div  class="col" id="4">
+                    <p data-requester="4-X">X</p>
+                    <p data-requester="4-O">O</p>
+                </div>
+
+                <div  class="col" id="5">
+                    <p data-requester="5-X">X</p>
+                    <p data-requester="5-O">O</p>
+                </div>
+            </div>
+
+            <div class="row">
+                <div  class="col" id="6">
+                    <p data-requester="6-X">X</p>
+                    <p data-requester="6-O">O</p>
+                </div>
+
+                <div class="col" id="7">
+                    <p data-requester="7-X">X</p>
+                    <p data-requester="7-O">O</p>
+                </div>
+
+                <div class="col" id="8">
+                    <p data-requester="8-X">X</p>
+                    <p data-requester="8-O">O</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.4/socket.io.js"></script>
+
+<script>
+
+    //Functions Components
+    function renderBoard(location, player){
+        let element = document.querySelector(`p[data-requester="${location}-${player}"]`)
+        element.style.display = 'block'
+        element.parentNode.removeEventListener('click', positionReveled)
+    }
+
+    function menu(open, type) {
+        if(open){
+            document.querySelector('#'+type).style.display = 'flex'
+        } else {
+            document.querySelector('#'+type).style.display = 'none'
+        }
+    }
+
+    function win(winner) {
+        const typePlayer = localStorage.getItem('typePlayer')
+
+        if(winner == 'velha'){
+            alert('DEU VELHA')
+        } else if(winner == typePlayer) {
+            alert('VOCÊ GANHOU')
+        } else {
+            alert('VOCÊ PERDEU')
+        }
+
+        menu(false, 'filter')
+        restart()
+    }
+
+    function restart(){
+        for(i=0; i<9; i++){
+            document.querySelector(`p[data-requester="${i}-X"]`).style.display = 'none'
+            document.querySelector(`p[data-requester="${i}-O"]`).style.display = 'none'
+        }
+
+        menu(true, 'promise')
+    }
+
+    //Function Initial
+    function start() {
+        const board = document.querySelectorAll('.col')
+        for(b of board){
+            b.addEventListener('click', positionReveled)
+        }
+
+        menu(false, 'promise')
+        menu(false, 'menuPrincipal')
+    }
+
+    function positionReveled(event, p) {
+        const typePlayer = localStorage.getItem('typePlayer')
+        renderBoard(event.target.id, typePlayer)
+        socket.emit('position', {id: event.target.id, typePlayer: typePlayer})
+        menu(true, 'filter')
+    }
+
+    // AQUI ONDE ACONTECE A COMUNICAÇÃO SOCKET.IO
+    const socket = io('http://192.168.6.161')
+
+    socket.on('start', () => {
+        start()
+    })
+
+    socket.on('type', data => {
+        
+        let countFinal = 0
+        let count = 0
+        let type
+
+        for(p of data){
+            if(p === socket.id){
+                countFinal = count
+            }
+            count++
+        }
+
+        if(countFinal === 0){
+            type = 'X'
+        } else  {
+            type = 'O'
+        }
+
+        document.getElementById('typePlayer').innerHTML = type
+
+        localStorage.setItem('socketId', socket.id)
+        localStorage.setItem('typePlayer', type)
+
+        if(type === 'X'){
+            menu(false, 'filter')
+        } else {
+            menu(true, 'filter')
+        }
+    })
+
+    socket.on('positions', data => {
+        renderBoard(data.id, data.typePlayer)
+
+        if(data.typePlayer === 'X' && localStorage.getItem('typePlayer') === 'O'){
+            localStorage.setItem('pemited', true)
+            menu(false, 'filter')
+        } else if(data.typePlayer === 'O' && localStorage.getItem('typePlayer') === 'X') {
+            localStorage.setItem('pemited', true)
+            menu(false, 'filter')
+        }
+
+        if(data.winner !== null){
+            win(data.winner)
+        } else if(data.winner === 'velha') {
+            win('velha')
+        }
+    })
+
+    socket.on('youWinner', winner => {
+        console.log(winner)
+        if(winner === 'velha') {
+            win('velha')
+        } else {
+            win(winner)
+        }
+    })
+
+    socket.on('restart', () => {
+        restart()
+    })
+</script>
+
+</html>
